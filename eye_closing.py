@@ -1,5 +1,6 @@
-import re
+import threading
 import time
+import winsound
 import cv2
 import dlib
 import imutils
@@ -14,6 +15,12 @@ def eye_aspect_ratio(eye):
     C = dist.euclidean(eye[0], eye[3])
     ear = (A + B) / (2.0 * C)
     return ear
+
+def alert():
+    for _ in range(3):
+        winsound.Beep(1000, 80)
+        time.sleep(0.02)
+    time.sleep(3)
 
 EYE_AR_THRESH = 0.3
 EYE_AR_CONSEC_FRAMES = 3
@@ -37,6 +44,8 @@ vs = VideoStream(src=0).start()
 fileStream = False
 time.sleep(1.0)
 
+alertThread = threading.Thread(target=alert)
+
 while True:
     if fileStream and not vs.more():
         break
@@ -53,6 +62,9 @@ while True:
             absentTime = time.time()
         elif time.time() - absentTime >= ABSENT_TIME_THRESH:
             text = 'ABSENT'
+            if not alertThread.is_alive():
+                alertThread = threading.Thread(target=alert)
+                alertThread.start()
     else:
         absentTime = 0
         text = 'PRESENT'
@@ -79,6 +91,9 @@ while True:
                 closedTime = time.time()
             elif time.time() - closedTime >= CLOSED_TIME_THRESH:
                 text = 'SLEEPING'
+                if not alertThread.is_alive():
+                    alertThread = threading.Thread(target=alert)
+                    alertThread.start()
         else:
             closedTime = 0
             text = 'PRESENT'
